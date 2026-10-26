@@ -11,7 +11,7 @@ on:
     - cron: '0 0 * * *' # 08:00 Asia/Shanghai
   push:
     branches:
-      - master
+      - main
     paths:
       - run_page/coros_mcp_sync.py
       - requirements.txt
@@ -87,7 +87,7 @@ jobs:
             exit 0
           fi
           git commit -m "chore: sync runs $(date -u +%Y-%m-%dT%H:%MZ)"
-          git pull --rebase origin master
+          git pull --rebase origin main
           git push
 
   deploy:
@@ -101,7 +101,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: master
+          ref: main
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
