@@ -1,7 +1,7 @@
 name: COROS Sync
 
 # Daily sync from the official COROS MCP gateway, then rebuild and deploy the
-# page. Data is committed back to master so history never depends on the
+# page. Data is committed back to main so history never depends on the
 # Actions cache (the old cache-based workflow lost months of data when the
 # Strava token expired).
 
