@@ -27,6 +27,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  SKIP_GEOCODE: '1'
+  SKIP_MERGE: '1'
   ATHLETE: zhubao315
   TITLE: "zhubao315的徒步与山野"
   TITLE_GRID: "Over 10km Hikes"

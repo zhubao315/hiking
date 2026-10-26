@@ -93,8 +93,10 @@ class TrackLoader:
 
         tracks = self._filter_tracks(tracks)
 
-        # merge tracks that took place within one hour
-        tracks = self._merge_tracks(tracks)
+        # merge tracks that took place within one hour (disabled for sport
+        # sites, where two separate outings can be less than an hour apart)
+        if not os.getenv("SKIP_MERGE"):
+            tracks = self._merge_tracks(tracks)
         # filter out tracks with length < min_length
         return [t for t in tracks if t.length >= self.min_length]
 
@@ -117,7 +119,8 @@ class TrackLoader:
         tracks = self._filter_tracks(tracks)
         print(f"After filter tracks: {len(tracks)}")
         # merge tracks that took place within one hour
-        tracks = self._merge_tracks(tracks)
+        if not os.getenv("SKIP_MERGE"):
+            tracks = self._merge_tracks(tracks)
         return [t for t in tracks if t.length >= self.min_length]
 
     def _filter_tracks(self, tracks):
