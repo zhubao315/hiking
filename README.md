@@ -26,7 +26,7 @@
 | 17 次徒步 | 281 km | 16,921 m | 2024–2026 | 2026-10-03 |
 <!-- STATS:END -->
 
-> 每天早上 **08:00（北京时间）** 自动同步；同步完成后自动重建页面并部署到 GitHub Pages。
+> 每天早上自动同步（约 **08:30 北京时间**）；完成后自动重建页面并部署到 GitHub Pages。
 
 ## 站点亮点
 
@@ -49,7 +49,7 @@ flowchart LR
 ```
 
 - **数据源**：COROS 官方 MCP（OAuth 2.0 + PKCE），不再依赖 Strava token
-- **调度**：每天 `00:00 UTC` / `08:00 Asia/Shanghai`
+- **调度**：每天 `00:30 UTC` / `08:30 Asia/Shanghai`
 - **工作流**：[`coros_sync.yml`](https://github.com/zhubao315/hiking/blob/main/.github/workflows/coros_sync.yml)
 - **落盘**：同步结果直接提交回仓库，不依赖会过期的 Actions 缓存
 - **构建**：同步 → SVG 海报 → README 数据表 → `pnpm build` → Pages

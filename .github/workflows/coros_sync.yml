@@ -8,7 +8,7 @@ name: COROS Sync
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *' # 08:00 Asia/Shanghai
+    - cron: '30 0 * * *' # 08:30 Asia/Shanghai
   push:
     branches:
       - main
