@@ -15,10 +15,10 @@ interface ISiteMetadataResult {
 }
 
 const data: ISiteMetadataResult = {
-  siteTitle: 'zhubao315的徒步与山野',
+  siteTitle: 'zhubao315 的徒步与山野',
   siteUrl: 'https://zhubao315.github.io/hiking/',
   logo: 'https://avatars.githubusercontent.com/u/1206487?v=4',
-  description: 'zhubao315的徒步与山野 · 3D 地形记录',
+  description: 'zhubao315 的徒步与山野 · 3D 地形记录',
   tagline: '去山里，把呼吸和海拔一起记录下来。',
   accent: '#34d399',
   accent2: '#22c55e',
