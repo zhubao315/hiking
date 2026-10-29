@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '30 0 * * 1' # Mondays 08:30 Asia/Shanghai (weekly catch-all)
-    - cron: '30 0 * * 4 5,10' # Thursdays in May & October (hiking season)
+    - cron: '30 0 * 5,10 4' # Thursdays in May & October (hiking season)
   push:
     branches:
       - main
