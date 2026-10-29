@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import useActivities from '@/hooks/useActivities';
+import { HIKE_TITLES } from '@/utils/const';
 import {
-  CHINESE_LOCATION_INFO_MESSAGE_FIRST,
-  CHINESE_LOCATION_INFO_MESSAGE_SECOND,
-  HIKE_TITLES,
-} from '@/utils/const';
-import { MILESTONE_KEYS, formatPace } from '@/utils/utils';
+  Activity,
+  convertMovingTime2Sec,
+  MILESTONE_KEYS,
+  formatPace,
+} from '@/utils/utils';
 import styles from './style.module.css';
 
 interface IJourneyStatsProps {
@@ -15,6 +16,32 @@ interface IJourneyStatsProps {
 }
 
 const PREVIEW_CITIES = 8;
+
+interface RecordRow {
+  label: string;
+  value: string;
+  date: string;
+}
+
+interface Records {
+  pbRows: RecordRow[];
+  prRows: RecordRow[];
+}
+
+const fmtDuration = (seconds: number): string => {
+  const s = Math.round(seconds);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return [h, m, s % 60].map((n) => String(n).padStart(2, '0')).join(':');
+};
+
+// 最快时间：用单次徒步的平均速度推算（Strava 口径），走量不足该距离则不计。
+const FAST_DISTANCES = [
+  { label: '10 公里', meters: 10000 },
+  { label: '15 公里', meters: 15000 },
+  { label: '20 公里', meters: 20000 },
+  { label: '25 公里', meters: 25000 },
+];
 
 // 一天里的顺序：清晨 → 午间 → 午后 → 傍晚 → 夜晚；alpha 越小颜色越暗。
 const DAY_SEGMENTS = [
@@ -82,6 +109,104 @@ const JourneyStats = ({ changeCity, changePeriod, changeMilestone }: IJourneySta
     },
   ];
 
+  // 个人最佳 / 最快时间：全部由历史数据实时推算，缺失不计、绝不补零。
+  const records = useMemo<Records>(() => {
+    const empty: Records = { pbRows: [], prRows: [] };
+    if (!activities.length) return empty;
+    const dateOf = (a: Activity) => a.start_date_local.slice(0, 10);
+    const speedKmh = (a: Activity) => (a.average_speed || 0) * 3.6;
+
+    // 均速 < 1.5 km/h 是忘关表/挂表（榜首永远被 9 h 的挂表时长霸占），
+    // > 6.5 km/h 是骑行/跑步误标徒步：两种都不计。
+    const plausible = activities.filter(
+      (a) => a.distance > 0 && speedKmh(a) >= 1.5 && speedKmh(a) <= 6.5
+    );
+    if (!plausible.length) return empty;
+
+    // 爬升以 3D 地形烘焙值（climb_terrain）为准，无烘焙的用设备记录值兜底。
+    // 早年手机 GPS 漂移会把爬升虚高到物理不可能（如爬升 > 2.5×最高到达
+    // 海拔；无海拔数据时按单位距离爬升 > 100 m/km 判），这样的爬升值剔除。
+    const climbOf = (a: Activity): number => {
+      const alt = a.altitude_max;
+      const gain = a.climb_terrain || (a.elevation_gain || 0);
+      if (!gain) return 0;
+      if (alt) return gain <= 2.5 * alt ? gain : 0;
+      return gain <= 100 * (a.distance / 1000) ? gain : 0;
+    };
+
+    // 「最长时间/最快时间」只取有意义的山野徒步：单次爬升 ≥ 150 m，平原
+    // 散步与快走不参与。
+    const mountain = plausible.filter((a) => climbOf(a) >= 150);
+
+    const far = plausible.reduce((a, b) =>
+      b.distance > a.distance ? b : a
+    );
+    const longest = mountain.length
+      ? mountain.reduce((a, b) =>
+          convertMovingTime2Sec(b.moving_time) >
+          convertMovingTime2Sec(a.moving_time)
+            ? b
+            : a
+        )
+      : null;
+    const highestClimb = plausible.reduce((a, b) =>
+      climbOf(b) > climbOf(a) ? b : a
+    );
+    const highestAlt = activities.reduce((a, b) =>
+      (b.altitude_max ?? 0) > (a.altitude_max ?? 0) ? b : a
+    );
+
+    const pbRows: RecordRow[] = [
+      {
+        label: '最远距离',
+        value: `${(far.distance / 1000).toFixed(2)} km`,
+        date: dateOf(far),
+      },
+      ...(longest
+        ? [
+            {
+              label: '最长时间',
+              value: fmtDuration(convertMovingTime2Sec(longest.moving_time)),
+              date: dateOf(longest),
+            },
+          ]
+        : []),
+      ...(climbOf(highestClimb)
+        ? [
+            {
+              label: '最大爬升',
+              value: `${Math.round(climbOf(highestClimb)).toLocaleString('en-US')} m`,
+              date: dateOf(highestClimb),
+            },
+          ]
+        : []),
+      ...((highestAlt.altitude_max ?? 0) > 0
+        ? [
+            {
+              label: '最高到达海拔',
+              value: `${Math.round(highestAlt.altitude_max!).toLocaleString('en-US')} m`,
+              date: dateOf(highestAlt),
+            },
+          ]
+        : []),
+    ];
+
+    const prRows: RecordRow[] = FAST_DISTANCES.map(({ label, meters }) => {
+      const cands = mountain.filter((a) => a.distance >= meters);
+      if (!cands.length) return null;
+      const best = cands.reduce((a, b) =>
+        b.average_speed > a.average_speed ? b : a
+      );
+      return {
+        label,
+        value: fmtDuration(meters / best.average_speed),
+        date: dateOf(best),
+      };
+    }).filter((r): r is RecordRow => r !== null);
+
+    return { pbRows, prRows };
+  }, [activities]);
+
   const homeCity = cityArr[0];
   const maxMeters = homeCity ? homeCity[1] : 1;
   const shownCities = expanded ? cityArr : cityArr.slice(0, PREVIEW_CITIES);
@@ -89,12 +214,6 @@ const JourneyStats = ({ changeCity, changePeriod, changeMilestone }: IJourneySta
   return (
     <section className={styles.journey} aria-label="Total Journey">
       <p className={styles.kicker}>Total Journey</p>
-      <p className={styles.quote}>
-        {CHINESE_LOCATION_INFO_MESSAGE_FIRST}
-        <br />
-        {CHINESE_LOCATION_INFO_MESSAGE_SECOND}
-        <span className={styles.quoteEn}> — Yesterday you said tomorrow.</span>
-      </p>
 
       <div className={styles.geoGrid}>
         <div className={styles.geoCell}>
@@ -268,6 +387,43 @@ const JourneyStats = ({ changeCity, changePeriod, changeMilestone }: IJourneySta
           </div>
         </div>
       </div>
+
+      {records.pbRows.length ? (
+        <div className={styles.records}>
+          <div className={styles.recordCard}>
+            <div className={styles.panelHead}>
+              <span className={styles.panelTitle}>个人最佳</span>
+              <span className={styles.panelHint}>历史之最 · 挂表与误标不计</span>
+            </div>
+            <div className={styles.recordList}>
+              {records.pbRows.map((r) => (
+                <div key={r.label} className={styles.recordRow}>
+                  <span className={styles.recordLabel}>{r.label}</span>
+                  <span className={styles.recordValue}>{r.value}</span>
+                  <span className={styles.recordDate}>{r.date}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {records.prRows.length ? (
+            <div className={styles.recordCard}>
+              <div className={styles.panelHead}>
+                <span className={styles.panelTitle}>最快时间</span>
+                <span className={styles.panelHint}>按平均速度推算 · 山野徒步</span>
+              </div>
+              <div className={styles.recordList}>
+                {records.prRows.map((r) => (
+                  <div key={r.label} className={styles.recordRow}>
+                    <span className={styles.recordLabel}>{r.label}</span>
+                    <span className={styles.recordValue}>{r.value}</span>
+                    <span className={styles.recordDate}>{r.date}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 };

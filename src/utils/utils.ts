@@ -25,6 +25,10 @@ export interface Activity {
   average_heartrate?: number | null;
   average_speed: number;
   elevation_gain?: number | null;
+  /** total ascent from the baked 3D terrain, metres (scenes-only backfill) */
+  climb_terrain?: number | null;
+  /** highest elevation reached on the route, metres (scenes-only backfill) */
+  altitude_max?: number | null;
   streak: number;
 }
 

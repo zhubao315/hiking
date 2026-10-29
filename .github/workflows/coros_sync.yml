@@ -145,6 +145,12 @@ jobs:
         if: steps.change.outputs.rebuild == 'true'
         run: node scripts/bake-scenes.mjs --since "$(date -u -d '7 days ago' +%F)" --limit 30
 
+      - name: Backfill terrain records and sync into DB
+        if: steps.change.outputs.rebuild == 'true'
+        run: |
+          node scripts/backfill-scene-records.mjs
+          python scripts/sync_scene_records_db.py .
+
       - name: Export parquet snapshot
         if: steps.change.outputs.rebuild == 'true'
         run: |

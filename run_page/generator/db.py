@@ -47,6 +47,8 @@ ACTIVITY_KEYS = [
     "average_heartrate",
     "average_speed",
     "elevation_gain",
+    "climb_terrain",
+    "altitude_max",
 ]
 
 
@@ -67,6 +69,8 @@ class Activity(Base):
     average_heartrate = Column(Float)
     average_speed = Column(Float)
     elevation_gain = Column(Float)
+    climb_terrain = Column(Float)
+    altitude_max = Column(Float)
     streak = None
 
     def to_dict(self):
