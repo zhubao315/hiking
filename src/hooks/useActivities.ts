@@ -1,4 +1,4 @@
-import { locationForRun, titleForRun } from '@/utils/utils';
+import { locationForRun, periodTitleForRun } from '@/utils/utils';
 import activities from '@/static/activities.json';
 
 const useActivities = () => {
@@ -12,7 +12,7 @@ const useActivities = () => {
   activities.forEach((run) => {
     const location = locationForRun(run);
 
-    const periodName = titleForRun(run);
+    const periodName = periodTitleForRun(run);
     if (periodName) {
       runPeriod[periodName] = runPeriod[periodName]
         ? runPeriod[periodName] + 1

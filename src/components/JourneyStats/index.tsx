@@ -3,31 +3,32 @@ import useActivities from '@/hooks/useActivities';
 import {
   CHINESE_LOCATION_INFO_MESSAGE_FIRST,
   CHINESE_LOCATION_INFO_MESSAGE_SECOND,
-  RUN_TITLES,
+  HIKE_TITLES,
 } from '@/utils/const';
-import { formatPace } from '@/utils/utils';
+import { MILESTONE_KEYS, formatPace } from '@/utils/utils';
 import styles from './style.module.css';
 
 interface IJourneyStatsProps {
   changeCity: (_city: string) => void;
-  changeTitle: (_title: string) => void;
+  changePeriod: (_period: string) => void;
+  changeMilestone: (_milestone: string) => void;
 }
 
 const PREVIEW_CITIES = 8;
 
 // 一天里的顺序：清晨 → 午间 → 午后 → 傍晚 → 夜晚；alpha 越小颜色越暗。
 const DAY_SEGMENTS = [
-  { title: RUN_TITLES.MORNING_RUN_TITLE, label: '清晨', alpha: 95 },
-  { title: RUN_TITLES.MIDDAY_RUN_TITLE, label: '午间', alpha: 76 },
-  { title: RUN_TITLES.AFTERNOON_RUN_TITLE, label: '午后', alpha: 58 },
-  { title: RUN_TITLES.EVENING_RUN_TITLE, label: '傍晚', alpha: 44 },
-  { title: RUN_TITLES.NIGHT_RUN_TITLE, label: '夜晚', alpha: 32 },
+  { title: HIKE_TITLES.MORNING_HIKE_TITLE, label: '清晨', alpha: 95 },
+  { title: HIKE_TITLES.MIDDAY_HIKE_TITLE, label: '午间', alpha: 76 },
+  { title: HIKE_TITLES.AFTERNOON_HIKE_TITLE, label: '午后', alpha: 58 },
+  { title: HIKE_TITLES.EVENING_HIKE_TITLE, label: '傍晚', alpha: 44 },
+  { title: HIKE_TITLES.NIGHT_HIKE_TITLE, label: '夜晚', alpha: 32 },
 ];
 
 const fmtKm = (meters: number) =>
   Math.round(meters / 1000).toLocaleString('en-US');
 
-const JourneyStats = ({ changeCity, changeTitle }: IJourneyStatsProps) => {
+const JourneyStats = ({ changeCity, changePeriod, changeMilestone }: IJourneyStatsProps) => {
   const { activities, years, countries, provinces, cities, runPeriod } =
     useActivities();
   const [expanded, setExpanded] = useState(false);
@@ -62,21 +63,24 @@ const JourneyStats = ({ changeCity, changeTitle }: IJourneyStatsProps) => {
     label,
     alpha,
     count: runPeriod[title] || 0,
-  })).filter((p) => p.count > 0);
+  }));
   const periodTotal = periods.reduce((sum, p) => sum + p.count, 0);
 
-  const races = [
+  // 山野里程碑：单次 ≥20 km 的长线穿越 & 单次累计爬升 ≥1,000 m。
+  const milestones = [
     {
-      title: RUN_TITLES.HALF_MARATHON_RUN_TITLE,
-      label: '半马',
-      count: runPeriod[RUN_TITLES.HALF_MARATHON_RUN_TITLE] || 0,
+      key: MILESTONE_KEYS.LONG_HIKE,
+      label: '长线 20K+',
+      count: activities.filter((run) => run.distance >= 20000).length,
     },
     {
-      title: RUN_TITLES.FULL_MARATHON_RUN_TITLE,
-      label: '全马',
-      count: runPeriod[RUN_TITLES.FULL_MARATHON_RUN_TITLE] || 0,
+      key: MILESTONE_KEYS.THOUSAND_CLIMB,
+      label: '千米爬升 1000m+',
+      count: activities.filter(
+        (run) => (run.elevation_gain ?? 0) >= 1000
+      ).length,
     },
-  ].filter((r) => r.count > 0);
+  ];
 
   const homeCity = cityArr[0];
   const maxMeters = homeCity ? homeCity[1] : 1;
@@ -183,7 +187,7 @@ const JourneyStats = ({ changeCity, changeTitle }: IJourneyStatsProps) => {
         <div className={styles.rhythm}>
           <div className={styles.panelHead}>
             <span className={styles.panelTitle}>时段节律</span>
-            <span className={styles.panelHint}>{periodTotal} Runs</span>
+            <span className={styles.panelHint}>{periodTotal} Hikes</span>
           </div>
           {periodTotal ? (
             <div className={styles.periodBar} role="group" aria-label="时段分布">
@@ -198,8 +202,8 @@ const JourneyStats = ({ changeCity, changeTitle }: IJourneyStatsProps) => {
                     flexGrow: p.count,
                     background: `color-mix(in srgb, var(--accent) ${p.alpha}%, transparent)`,
                   }}
-                  onClick={() => changeTitle(p.title)}
-                  title={`${p.label}跑步 · ${p.count} Runs`}
+                  onClick={() => changePeriod(p.title)}
+                  title={`${p.label}徒步 · ${p.count} 次`}
                   aria-label={`${p.label} ${p.count} 次`}
                 />
               ))}
@@ -211,7 +215,7 @@ const JourneyStats = ({ changeCity, changeTitle }: IJourneyStatsProps) => {
                 key={p.title}
                 type="button"
                 className={styles.legendItem}
-                onClick={() => changeTitle(p.title)}
+                onClick={() => changePeriod(p.title)}
               >
                 <span
                   className={styles.legendDot}
@@ -225,17 +229,18 @@ const JourneyStats = ({ changeCity, changeTitle }: IJourneyStatsProps) => {
             ))}
           </div>
 
-          {races.length ? (
+          {milestones.length ? (
             <div className={styles.races}>
-              {races.map((r) => (
+              {milestones.map((m) => (
                 <button
-                  key={r.title}
+                  key={m.key}
                   type="button"
                   className={styles.racePill}
-                  onClick={() => changeTitle(r.title)}
+                  onClick={() => changeMilestone(m.key)}
+                  title={`查看 ${m.label} 的轨迹`}
                 >
-                  <span className={styles.raceLabel}>{r.label}</span>
-                  <span className={styles.raceCount}>{r.count} Runs</span>
+                  <span className={styles.raceLabel}>{m.label}</span>
+                  <span className={styles.raceCount}>{m.count} Hikes</span>
                 </button>
               ))}
             </div>

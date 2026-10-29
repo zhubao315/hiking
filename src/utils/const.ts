@@ -75,6 +75,12 @@ const MIDDAY_RUN_TITLE = IS_CHINESE ? '午间跑步' : 'Midday Run';
 const AFTERNOON_RUN_TITLE = IS_CHINESE ? '午后跑步' : 'Afternoon Run';
 const EVENING_RUN_TITLE = IS_CHINESE ? '傍晚跑步' : 'Evening Run';
 const NIGHT_RUN_TITLE = IS_CHINESE ? '夜晚跑步' : 'Night Run';
+// hiking-specific period titles, used by periodTitleForRun / runPeriod
+const MORNING_HIKE_TITLE = IS_CHINESE ? '清晨徒步' : 'Morning Hike';
+const MIDDAY_HIKE_TITLE = IS_CHINESE ? '午间徒步' : 'Midday Hike';
+const AFTERNOON_HIKE_TITLE = IS_CHINESE ? '午后徒步' : 'Afternoon Hike';
+const EVENING_HIKE_TITLE = IS_CHINESE ? '傍晚徒步' : 'Evening Hike';
+const NIGHT_HIKE_TITLE = IS_CHINESE ? '夜晚徒步' : 'Night Hike';
 const RUN_GENERIC_TITLE = IS_CHINESE ? '跑步' : 'Run';
 const RUN_TRAIL_TITLE = IS_CHINESE ? '越野跑' : 'Trail Run';
 const RUN_TREADMILL_TITLE = IS_CHINESE ? '跑步机' : 'Treadmill Run';
@@ -103,6 +109,14 @@ const RUN_TITLES = {
   NIGHT_RUN_TITLE,
 };
 
+const HIKE_TITLES = {
+  MORNING_HIKE_TITLE,
+  MIDDAY_HIKE_TITLE,
+  AFTERNOON_HIKE_TITLE,
+  EVENING_HIKE_TITLE,
+  NIGHT_HIKE_TITLE,
+};
+
 export {
   USE_GOOGLE_ANALYTICS,
   GOOGLE_ANALYTICS_TRACKING_ID,
@@ -115,6 +129,7 @@ export {
   ROAD_LABEL_DISPLAY,
   INFO_MESSAGE,
   RUN_TITLES,
+  HIKE_TITLES,
   USE_ANIMATION_FOR_GRID,
   USE_DASH_LINE,
   LINE_OPACITY,

@@ -17,7 +17,8 @@ import {
   IViewState,
   filterAndSortRuns,
   filterCityRuns,
-  filterTitleRuns,
+  filterMilestoneRuns,
+  filterPeriodRuns,
   filterYearRuns,
   geoJsonForRuns,
   getBoundsForGeoData,
@@ -85,8 +86,12 @@ const Index = () => {
     changeByItem(city, 'City', filterCityRuns);
   };
 
-  const changeTitle = (title: string) => {
-    changeByItem(title, 'Title', filterTitleRuns);
+  const changePeriod = (period: string) => {
+    changeByItem(period, 'Title', filterPeriodRuns);
+  };
+
+  const changeMilestone = (milestone: string) => {
+    changeByItem(milestone, 'Title', filterMilestoneRuns);
   };
 
   const locateActivity = (runIds: RunIds) => {
@@ -203,7 +208,11 @@ const Index = () => {
   return (
     <Layout>
       <SiteHero />
-      <JourneyStats changeCity={changeCity} changeTitle={changeTitle} />
+      <JourneyStats
+        changeCity={changeCity}
+        changePeriod={changePeriod}
+        changeMilestone={changeMilestone}
+      />
       <div id="explore" className="mt-8 flex flex-col gap-8 lg:flex-row">
         <aside className="w-full lg:w-1/3">
           <div className="card p-6 lg:sticky lg:top-24">
@@ -211,7 +220,7 @@ const Index = () => {
               <LocationStat
                 changeYear={changeYear}
                 changeCity={changeCity}
-                changeTitle={changeTitle}
+                changePeriod={changePeriod}
               />
             ) : (
               <YearsStat year={year} onClick={changeYear} />

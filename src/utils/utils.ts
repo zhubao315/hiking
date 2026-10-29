@@ -4,7 +4,7 @@ import { WebMercatorViewport } from 'viewport-mercator-project';
 import { chinaGeojson, RPGeometry } from '@/static/run_countries';
 import worldGeoJson from '@surbowl/world-geo-json-zh/world.zh.json';
 import { chinaCities } from '@/static/city';
-import { MAP_LINE_COLOR, MUNICIPALITY_CITIES_ARR, NEED_FIX_MAP, RUN_TITLES, ACTIVITY_TYPES, RICH_TITLE, SITE_SPORT } from './const';
+import { MAP_LINE_COLOR, MUNICIPALITY_CITIES_ARR, NEED_FIX_MAP, RUN_TITLES, HIKE_TITLES, ACTIVITY_TYPES, RICH_TITLE, SITE_SPORT } from './const';
 import { FeatureCollection, LineString } from 'geojson';
 
 export type Coordinate = [number, number];
@@ -365,6 +365,40 @@ const filterCityRuns = (run: Activity, city: string) => {
 const filterTitleRuns = (run: Activity, title: string) =>
   titleForRun(run) === title;
 
+// Period classification by start time (local): 清晨 <=10, 午间 <=14, 午后 <=18, 傍晚 <=21, 夜晚 otherwise.
+const periodTitleForRun = (run: Activity): string => {
+  const runHour = +run.start_date_local.slice(11, 13);
+  if (runHour >= 0 && runHour <= 10) {
+    return HIKE_TITLES.MORNING_HIKE_TITLE;
+  }
+  if (runHour > 10 && runHour <= 14) {
+    return HIKE_TITLES.MIDDAY_HIKE_TITLE;
+  }
+  if (runHour > 14 && runHour <= 18) {
+    return HIKE_TITLES.AFTERNOON_HIKE_TITLE;
+  }
+  if (runHour > 18 && runHour <= 21) {
+    return HIKE_TITLES.EVENING_HIKE_TITLE;
+  }
+  return HIKE_TITLES.NIGHT_HIKE_TITLE;
+};
+
+// Milestone keys: '20K' = single-hike distance >= 20 km; '1000m' = single-hike elevation gain >= 1000 m.
+const MILESTONE_KEYS = { LONG_HIKE: '20K', THOUSAND_CLIMB: '1000m' } as const;
+
+const hikeMeetsMilestone = (run: Activity, key: string): boolean => {
+  if (key === MILESTONE_KEYS.LONG_HIKE) return run.distance >= 20000;
+  if (key === MILESTONE_KEYS.THOUSAND_CLIMB)
+    return (run.elevation_gain ?? 0) >= 1000;
+  return false;
+};
+
+const filterPeriodRuns = (run: Activity, period: string) =>
+  periodTitleForRun(run) === period;
+
+const filterMilestoneRuns = (run: Activity, key: string) =>
+  hikeMeetsMilestone(run, key);
+
 const filterAndSortRuns = (
   activities: Activity[],
   item: string,
@@ -397,9 +431,13 @@ export {
   geoJsonForRuns,
   geoJsonForMap,
   titleForRun,
+  periodTitleForRun,
   filterYearRuns,
   filterCityRuns,
   filterTitleRuns,
+  filterPeriodRuns,
+  filterMilestoneRuns,
+  MILESTONE_KEYS,
   filterAndSortRuns,
   sortDateFunc,
   sortDateFuncReverse,
