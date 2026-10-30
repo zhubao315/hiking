@@ -25,9 +25,7 @@ for field in ("elevation_gain", "climb_terrain", "altitude_max"):
 
 # run_id → start_date map: JSON rows (matched by start_date) update the DB row
 # with the exact run_id SQLite holds
-dates = {
-    r[1]: r[0] for r in db.execute("SELECT run_id, start_date FROM activities")
-}
+dates = {r[1]: r[0] for r in db.execute("SELECT run_id, start_date FROM activities")}
 
 for field in ("elevation_gain", "climb_terrain", "altitude_max"):
     rows = [
@@ -35,8 +33,6 @@ for field in ("elevation_gain", "climb_terrain", "altitude_max"):
         for a in acts
         if a.get(field) is not None and a.get("start_date") in dates
     ]
-    db.executemany(
-        f"UPDATE activities SET {field}=? WHERE run_id=?", rows
-    )
+    db.executemany(f"UPDATE activities SET {field}=? WHERE run_id=?", rows)
     print(f"{root.name}: {field} set on {len(rows)} rows")
 db.commit()
