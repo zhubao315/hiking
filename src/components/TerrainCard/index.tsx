@@ -61,7 +61,7 @@ const TerrainCard = ({ run }: { run: Activity }) => {
         </Suspense>
       </TerrainBoundary>
       <p className="mt-2 text-right text-xs text-[#777]">
-        在浏览器本地渲染，赛道坐标不会上传
+        在浏览器本地渲染，轨迹坐标不会上传
       </p>
     </section>
   );

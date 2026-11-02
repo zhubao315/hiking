@@ -12,8 +12,17 @@ const RunMapButtons = ({ changeYear, thisYear }: { changeYear: (_year: string) =
         <li
           key={`${year}button`}
           className={styles.button + ` ${year === thisYear ? styles.selected : ''}`}
+          role="button"
+          tabIndex={0}
+          aria-pressed={year === thisYear}
           onClick={() => {
             changeYear(year);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              changeYear(year);
+            }
           }}
         >
           {year}

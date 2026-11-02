@@ -1,5 +1,6 @@
 import React, {useRef, useCallback, useEffect} from 'react';
 import Map, {Layer, Source, FullscreenControl, NavigationControl, MapRef} from 'react-map-gl/maplibre';
+import type { FilterSpecification } from 'maplibre-gl';
 import useActivities from '@/hooks/useActivities';
 import {
   IS_CHINESE,
@@ -35,15 +36,13 @@ const RunMap = ({
   thisYear,
 }: IRunMapProps) => {
   const { countries, provinces } = useActivities();
-  const mapRef = useRef<MapRef>();
+  const mapRef = useRef<MapRef | null>(null);
   const mapRefCallback = useCallback((ref: MapRef) => {
     if (ref) mapRef.current = ref;
   }, []);
-  const filterProvinces = provinces.slice();
-  const filterCountries = countries.slice();
   // for geojson format
-  filterProvinces.unshift('in', 'name');
-  filterCountries.unshift('in', 'name');
+  const filterProvinces: FilterSpecification = ['in', 'name', ...provinces];
+  const filterCountries: FilterSpecification = ['in', 'name', ...countries];
 
   const initGeoDataLength = geoData.features.length;
   const isBigMap = (viewState.zoom ?? 0) <= 3;

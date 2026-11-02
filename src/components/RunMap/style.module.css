@@ -39,6 +39,11 @@
   font-weight: 700;
 }
 
+.button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .runTitle {
   max-width: min(710px, 60vw);
   position: absolute;
@@ -79,4 +84,35 @@
   background-repeat: no-repeat;
   background-position: center center;
   opacity: 1;
+}
+
+/*
+ * Narrow screens: 14 wrapped year pills used to stack into a 7-row block that covered the
+ * top third of the map. One swipeable row instead, with the pills sized for touch.
+ */
+@media (max-width: 640px) {
+  .buttons {
+    right: 3.4rem;
+    max-width: none;
+    padding: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .buttons::-webkit-scrollbar {
+    display: none;
+  }
+
+  .button {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.25rem;
+    padding: 0 0.7rem;
+    font-size: 0.8rem;
+  }
 }
