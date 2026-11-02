@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Analytics } from '@vercel/analytics/react';
-import type { FeatureCollection, LineString } from 'geojson';
 import Layout from '@/components/Layout';
 import RunMap from '@/components/RunMap';
 import RunTable from '@/components/RunTable';
@@ -16,6 +15,7 @@ import useActivities from '@/hooks/useActivities';
 import { sceneHashOf } from '@/vert/scenes';
 import {
   IViewState,
+  RunGeoData,
   geoJsonForRuns,
   getBoundsForGeoData,
   scrollToMap,
@@ -128,7 +128,7 @@ const Index = () => {
   );
 
   const fullGeoData = useMemo(() => geoJsonForRuns(mapRuns), [mapRuns]);
-  const [geoData, setGeoData] = useState<FeatureCollection<LineString>>(
+  const [geoData, setGeoData] = useState<RunGeoData>(
     () => fullGeoData
   );
 
@@ -342,6 +342,9 @@ const Index = () => {
               }
               thisYear={selectedYear === 'all' ? 'Total' : selectedYear}
             />
+            <p className="border-t border-[#2a2a2a] px-4 py-2 text-xs text-[#777]">
+              轨迹按记录原样绘制；信号中断处断开显示，不做直线连接。
+            </p>
           </div>
 
           <div ref={terrainRef} className="scroll-mt-20">

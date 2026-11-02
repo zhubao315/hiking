@@ -5,9 +5,13 @@ import { chinaGeojson, RPGeometry } from '@/static/run_countries';
 import worldGeoJson from '@surbowl/world-geo-json-zh/world.zh.json';
 import { chinaCities } from '@/static/city';
 import { MAP_LINE_COLOR, MUNICIPALITY_CITIES_ARR, NEED_FIX_MAP, RUN_TITLES, HIKE_TITLES, ACTIVITY_TYPES, RICH_TITLE, SITE_SPORT } from './const';
-import { FeatureCollection, LineString } from 'geojson';
+import { FeatureCollection, LineString, MultiLineString } from 'geojson';
 
 export type Coordinate = [number, number];
+
+export type RunGeometry = LineString | MultiLineString;
+
+export type RunGeoData = FeatureCollection<RunGeometry>;
 
 export type RunIds = Array<number> | [];
 
@@ -220,20 +224,115 @@ const pathForRun = (run: Activity): Coordinate[] => {
   }
 };
 
-const geoJsonForRuns = (runs: Activity[]): FeatureCollection<LineString> => ({
+/**
+ * GPS track cleaning, drawn geometry only — `activities.json` is never touched and no
+ * displayed number changes.
+ *
+ * Some recorded tracks contain a jump between two consecutive fixes that is far longer than
+ * the track's own sampling spacing: the device relocated, or fixes were lost for a while. The
+ * raw polyline then draws a straight line across the map that the hike never walked. Measured
+ * over all 244 polylines: the decoded length of such a track can be 2.5x the distance the
+ * device recorded, confirming the straight hops are artefacts.
+ *
+ * Policy: a hop longer than `max(300 m, 12 x the track's median spacing)` breaks the line.
+ * The path between the two fixes is unknown, so it is left out instead of being bridged.
+ * Fragments that are pure dust (< 3 points or < 150 m) are dropped; a track made only of dust
+ * keeps its longest fragment so the map still shows something.
+ */
+const TRACK_GAP_FLOOR_METRES = 300;
+const TRACK_GAP_SPACING_FACTOR = 12;
+const TRACK_DUST_POINTS = 3;
+const TRACK_DUST_METRES = 150;
+
+const EARTH_RADIUS_METRES = 6371000;
+
+/** Great-circle distance in metres between two `[lng, lat]` coordinates. */
+const metresBetween = (a: Coordinate, b: Coordinate): number => {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const lat1 = toRad(a[1]);
+  const lat2 = toRad(b[1]);
+  const dLat = lat2 - lat1;
+  const dLng = toRad(b[0] - a[0]);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * EARTH_RADIUS_METRES * Math.asin(Math.min(1, Math.sqrt(h)));
+};
+
+const pathLength = (points: Coordinate[]): number => {
+  let total = 0;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    total += metresBetween(points[i], points[i + 1]);
+  }
+  return total;
+};
+
+const medianSpacing = (points: Coordinate[]): number => {
+  if (points.length < 2) return 0;
+  const hops: number[] = [];
+  for (let i = 0; i < points.length - 1; i += 1) {
+    hops.push(metresBetween(points[i], points[i + 1]));
+  }
+  hops.sort((a, b) => a - b);
+  return hops[Math.floor(hops.length / 2)];
+};
+
+/** Splits a track wherever consecutive fixes are farther apart than the track's own spacing allows. */
+const splitTrack = (points: Coordinate[]): Coordinate[][] => {
+  if (points.length < 3) return points.length ? [points] : [];
+  const limit = Math.max(
+    TRACK_GAP_FLOOR_METRES,
+    TRACK_GAP_SPACING_FACTOR * medianSpacing(points)
+  );
+  const parts: Coordinate[][] = [];
+  let current: Coordinate[] = [points[0]];
+  for (let i = 0; i < points.length - 1; i += 1) {
+    if (metresBetween(points[i], points[i + 1]) > limit) {
+      parts.push(current);
+      current = [points[i + 1]];
+    } else {
+      current.push(points[i + 1]);
+    }
+  }
+  parts.push(current);
+  return parts;
+};
+
+const trackPartsCache = new Map<number, Coordinate[][]>();
+
+/** Cleaned, drawable parts of a run's track. Geometry depends only on `summary_polyline`. */
+const trackPartsForRun = (run: Activity): Coordinate[][] => {
+  const cached = trackPartsCache.get(run.run_id);
+  if (cached) return cached;
+  const points = pathForRun(run);
+  const parts = splitTrack(points);
+  const drawable = parts.filter(
+    (part) =>
+      part.length >= TRACK_DUST_POINTS && pathLength(part) >= TRACK_DUST_METRES
+  );
+  const result = drawable.length
+    ? drawable
+    : parts.length
+      ? [parts.reduce((a, b) => (pathLength(b) > pathLength(a) ? b : a))]
+      : [];
+  trackPartsCache.set(run.run_id, result);
+  return result;
+};
+
+const geoJsonForRuns = (runs: Activity[]): RunGeoData => ({
   type: 'FeatureCollection',
   features: runs.map((run) => {
-    const points = pathForRun(run);
+    const parts = trackPartsForRun(run);
 
     return {
       type: 'Feature',
       properties: {
         color: MAP_LINE_COLOR,
       },
-      geometry: {
-        type: 'LineString',
-        coordinates: points,
-      },
+      geometry:
+        parts.length > 1
+          ? { type: 'MultiLineString', coordinates: parts }
+          : { type: 'LineString', coordinates: parts[0] ?? [] },
     };
   }),
 });
@@ -320,15 +419,19 @@ export interface IViewState {
   zoom?: number;
 }
 
-const getBoundsForGeoData = (
-  geoData: FeatureCollection<LineString>
-): IViewState => {
+const getBoundsForGeoData = (geoData: RunGeoData): IViewState => {
   const { features } = geoData;
   let points: Coordinate[] = [];
-  // find first have data
+  // A track may be drawn in several parts now, so flatten every part of the first track that
+  // has data (the view still frames one area, as before).
   for (const f of features) {
-    if (f.geometry.coordinates.length) {
-      points = f.geometry.coordinates as Coordinate[];
+    const { geometry } = f;
+    const flat: Coordinate[] =
+      geometry.type === 'LineString'
+        ? (geometry.coordinates as Coordinate[])
+        : (geometry.coordinates as Coordinate[][]).flat();
+    if (flat.length) {
+      points = flat;
       break;
     }
   }

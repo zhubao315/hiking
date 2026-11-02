@@ -64,9 +64,18 @@ const RunMap = ({
   let endLon = 0;
   let endLat = 0;
   if (isSingleRun) {
-    const points = geoData.features[0].geometry.coordinates as Coordinate[];
-    [startLon, startLat] = points[0];
-    [endLon, endLat] = points[points.length - 1];
+    const { geometry } = geoData.features[0];
+    // A cleaned track may be drawn in several parts; both markers still belong to the whole hike.
+    const parts: Coordinate[][] =
+      geometry.type === 'LineString'
+        ? [geometry.coordinates as Coordinate[]]
+        : (geometry.coordinates as Coordinate[][]);
+    const first = parts.find((part) => part.length > 0);
+    const last = [...parts].reverse().find((part) => part.length > 0);
+    if (first && last) {
+      [startLon, startLat] = first[0];
+      [endLon, endLat] = last[last.length - 1];
+    }
   }
   let dash = USE_DASH_LINE && !isSingleRun && !isBigMap ? [2, 2] : [2, 0];
   const onMove = React.useCallback(({ viewState }: { viewState: IViewState }) => {
