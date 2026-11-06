@@ -340,7 +340,7 @@ src/static/run_countries.ts                      RPGeometry 增加 MultiLineStri
 
 原来注释与文档里那句「坐标不做反查、绝不从经纬度推断地点」已经不再成立，句子被改写，而不是留着变成假话。
 
-上线实测（2026-11-06 那次 workflow_dispatch 之后，1440×900 / 390×844 / 320×568）：页面读到「仅 244 / 344 条记录带地点（71%）：设备原生 75 条按记录原文归类，轨迹坐标解析 169 条…」，pageerror 0，库告警以外的 console error 0，横向溢出 0。CI 侧的输出是 `wrote 169 derived location(s)` 与 `database run_page/data.db: 146 row(s) updated, 23 run_id(s) absent`——那 23 条正是下一节的事。
+上线实测（2026-11-06 那次 workflow_dispatch 之后，1440×900 / 390×844 / 320×568）：页面读到「仅 244 / 344 条记录带地点（71%）：设备原生 75 条按记录原文归类，轨迹坐标解析 169 条…」，pageerror 0，库告警以外的 console error 0，横向溢出 0。CI 侧的输出是 `wrote 169 derived location(s)` 与 `database run_page/data.db: 146 row(s) updated, 23 run_id(s) absent`——那 23 条正是下一节的事。「地理足迹」列表里现在能看到 内蒙古自治区 / 浙江省 / 辽宁省 / 湖南省 / 湖北省 / 贵州省 / 四川省，这七个名字此前没有任何一条设备记录点出过。
 
 ## 十三、84 个 run_id 已被 float64 改写
 
