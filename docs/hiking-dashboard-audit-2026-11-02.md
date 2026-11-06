@@ -360,7 +360,7 @@ src/static/run_countries.ts                      RPGeometry 增加 MultiLineStri
 
 计划里原本要连 `scenes.json` 的键和 78 个 `public/scenes/<id>.scene` 一起改名，实测证明改了才会坏：
 
-- 浏览器拿到的是 JS number，`TerrainCard` 用 `String(run.run_id)` 拼出请求路径——**一个 19 位 id 经 `Number → String` 必然回到漂移后的十进制**，所以文件名必须是漂移形式；`src/vert/scenes.ts` 的 `sceneHashOf` 也正是先用字符串、再用 `byNumber` 数值兜底，才让 232 个键在修复后仍全部命中；
+- 浏览器拿到的是 JS number，`TerrainCard` 用 `String(run.run_id)` 拼出请求路径——**一个 19 位 id 经 `Number → String` 必然回到漂移后的十进制**，所以文件名必须是漂移形式。线上产物实测：esbuild 把这些 id 写成最短科学形式（`922337052958838e4`），JSON 里的精确文本一个都不出现在 chunk 里，解析后仍是同一个 double，`String()` 得到 `9223370529588380000`——正是 `public/scenes/` 里的文件名；`src/vert/scenes.ts` 的 `sceneHashOf` 先用字符串、再用 `byNumber` 数值兜底，232 个键在修复后仍全部命中；
 - CI 里的烘焙与回填步骤（`scripts/bake-scenes.mjs`、`scripts/backfill-scene-records.mjs`）都是 Node 读同一份 JSON 再写回，文件名永远由 `String(double)` 生成——即使手工改名，下一次烘焙又会生成漂移名的新文件；
 - 因此改名会当场断掉 78 条地形链接，而收益只有文件名好看。核对结果：232 条有场景的记录，hash 命中 232/232，`<String(run_id)>.scene` 与 `.scene.json` 成对存在 232/232。
 
@@ -372,4 +372,6 @@ src/static/run_countries.ts                      RPGeometry 增加 MultiLineStri
 
 ### 13.4 修复后的实测
 
-本地构建三视口（1440／390／320）与线上同页对照：pageerror 0、非库告警 console error 0、横向溢出 0，标题、累计里程、地点来源计数（设备原生 75 条 + 轨迹坐标解析 169 条）两侧完全一致；打开 3D 地形三条（两条 19 位 id、一条普通 id 对照）均 `.scene` 200、canvas 出图、无「地形加载失败」文案。hiking 的 JSON 仅 1.10 MB，不涉及 cycling 那套按年轨迹分片。
+本地构建三视口（1440／390／320）与线上同页对照：pageerror 0、非库告警 console error 0、横向溢出 0，标题、累计里程、地点来源计数（设备原生 75 条 + 轨迹坐标解析 169 条）两侧完全一致；打开 3D 地形三条（两条 19 位 id、一条普通 id 对照）均 `.scene` 200、canvas 出图、无「地形加载失败」文案——本地与线上各跑一遍，两侧六条断言全通过。
+
+部署后再直接核对发布物：`raw.githubusercontent.com` 上的 activities.json 里 **84 个精确 id 文本全部命中、漂移文本 0 条**，派生地点 169 条、设备原文 76 条；`scenes/9223370529588380000.scene` 仍 200（15,761 B，VSCN 头）。hiking 的 JSON 仅 1.10 MB（gzip 362 kB），不涉及 cycling 那套按年轨迹分片。
