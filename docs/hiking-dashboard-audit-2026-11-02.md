@@ -370,7 +370,11 @@ src/static/run_countries.ts                      RPGeometry 增加 MultiLineStri
 
 漂移的来源是那两步 Node 改写，所以工作流在 `Backfill terrain records and sync into DB` 之后、parquet／README／地点反查／集成检查之前新增 `Restore run_ids rounded away by Node`（`fix_run_id_precision_rh.py --execute`）：每天从 DB 权威值恢复，只改无歧义且三项一致的 id，其余原样报告；紧接的严格集成检查若发现任何残留往返，直接拒绝提交。
 
-### 13.4 修复后的实测
+### 13.4 复发防护实测
+
+防护不是「相信它会生效」，而是当场演过一遍：在部署后的树上原样重跑那两步 Node 写入（`node scripts/backfill-scene-records.mjs`，输出 `updated 232 of 344 activities`），**84 个 id 全部再次漂移、精确文本剩下 0 个**，其余字段一条未变（逐条比对 run_id 以外的所有键，差异 0）；紧接着跑新增的修复步骤，**84 个全部恢复**，产物与已提交的文件 `diff` 完全一致，严格集成检查再次 OK。
+
+### 13.5 修复后的实测
 
 本地构建三视口（1440／390／320）与线上同页对照：pageerror 0、非库告警 console error 0、横向溢出 0，标题、累计里程、地点来源计数（设备原生 75 条 + 轨迹坐标解析 169 条）两侧完全一致；打开 3D 地形三条（两条 19 位 id、一条普通 id 对照）均 `.scene` 200、canvas 出图、无「地形加载失败」文案——本地与线上各跑一遍，两侧六条断言全通过。
 
