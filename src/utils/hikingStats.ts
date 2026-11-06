@@ -110,6 +110,8 @@ export interface GeoSummary {
   cities: GeoEntry[];
   /** hikes that carry any structured location text */
   locatedCount: number;
+  /** of those, hikes whose place came from the GPS track, not the watch */
+  resolvedCount: number;
   /** locatedCount / total, 0–1 */
   coverage: number;
   homeProvince: string | null;
@@ -660,16 +662,19 @@ export interface ParsedLocation {
 }
 
 /**
- * Location exactly as the record states it.
+ * Location as the record states it, or as its track places it.
  *
  * Two shapes appear in `location_country`:
  * - a Python-dict repr with real `province` / `city` keys (Strava),
  * - a plain address string ("长安区, 西安市, 陕西省, 710124, 中国").
- * Both are read as text; coordinates are never reverse-geocoded and no place
- * name is ever inferred from a lat/lng.
+ * Both are read as text. `location_resolved` is the third shape: a place
+ * derived offline from the GPS track, in the same address-tail format, written
+ * by run_page/resolve_locations_rh.py only where the watch left the field
+ * empty — the device value always wins, and the geographic note reports how
+ * many records came from which source.
  */
 export const locationOfRun = (run: Activity): ParsedLocation | null => {
-  const raw = run.location_country;
+  const raw = run.location_country || run.location_resolved;
   if (!raw) return null;
 
   const dictProvince = DICT_PROVINCE.exec(raw);
@@ -700,12 +705,14 @@ export const computeGeo = (runs: readonly RunRecord[]): GeoSummary => {
   const cityMap = new Map<string, GeoEntry>();
   const countries = new Set<string>();
   let locatedCount = 0;
+  let resolvedCount = 0;
 
   for (const run of runs) {
     const location = locationOfRun(run);
     if (!location) continue;
     if (!location.province && !location.city) continue;
     locatedCount += 1;
+    if (!run.location_country && run.location_resolved) resolvedCount += 1;
     if (location.country) countries.add(location.country);
 
     const bump = (map: Map<string, GeoEntry>, name: string) => {
@@ -736,6 +743,7 @@ export const computeGeo = (runs: readonly RunRecord[]): GeoSummary => {
     provinces,
     cities,
     locatedCount,
+    resolvedCount,
     coverage: runs.length ? locatedCount / runs.length : 0,
     homeProvince: homeProvince || null,
   };

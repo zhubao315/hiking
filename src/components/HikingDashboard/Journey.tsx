@@ -115,8 +115,11 @@ const Journey = ({
           <h3 className={styles.blockTitle}>地理足迹</h3>
           <p className={styles.blockNote}>
             仅 {formatNumber(geo.locatedCount)} / {formatNumber(totals.count)}{' '}
-            条记录带结构化地点（{geoPercent}
-            %），按记录原文归类，从未根据坐标推断地名。
+            条记录带地点（{geoPercent}%）：设备原生{' '}
+            {formatNumber(geo.locatedCount - geo.resolvedCount)} 条按记录原文归类，
+            轨迹坐标解析 {formatNumber(geo.resolvedCount)} 条由 GPS
+            线离线落在省份／国家边界内得出（不联网、不猜测，无 GPS
+            线的记录仍显示为无地点）。
           </p>
           {geo.provinces.length ? (
             <ul className={styles.geoList}>
