@@ -151,6 +151,17 @@ jobs:
           node scripts/backfill-scene-records.mjs
           python scripts/sync_scene_records_db.py .
 
+      # The two steps above read and rewrite activities.json through Node, and
+      # any run_id above 2^53 loses its low digits on the way back out
+      # (9223370529588379807 becomes 9223370529588380000). The DB holds the
+      # value the watch reported, so restore it here, before the parquet
+      # export, the README stats, the resolver and the integrity check can all
+      # inherit the drift. Idempotent: it repairs only ids that match exactly
+      # one DB row on start time, distance and name, and reports the rest.
+      - name: Restore run_ids rounded away by Node
+        if: steps.change.outputs.rebuild == 'true'
+        run: python run_page/fix_run_id_precision_rh.py --execute
+
       - name: Export parquet snapshot
         if: steps.change.outputs.rebuild == 'true'
         run: |
@@ -173,7 +184,7 @@ jobs:
 
       - name: Check dataset integrity
         if: steps.change.outputs.rebuild == 'true'
-        run: python run_page/check_data_integrity_rh.py --sport hiking --warn-only
+        run: python run_page/check_data_integrity_rh.py --sport hiking
 
       - name: Commit new runs
         id: commit

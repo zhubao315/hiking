@@ -352,4 +352,24 @@ src/static/run_countries.ts                      RPGeometry 增加 MultiLineStri
 - 上一节 169 条派生地点里 **23 条**因此写不进 DB（resolver 按 JSON 里的 id 去 UPDATE，DB 没有这一行）；
 - running 清单里的 15 个 `hiking_run_id` 全部小于 2^53，未受影响。
 
-`run_page/fix_run_id_precision_rh.py` 只在没有歧义时恢复精确 id：恰好一个 DB id 与共享同一个 double，且名称、起始时间、里程都一致。今天的判定是 **84 可修 / 0 歧义 / 0 拒绝**。它尚未执行，因为修 id 必须与 `scenes.json` 的键和 `public/scenes/*.scene` 的文件名同时改，否则修好的记录会丢掉它现在就有的地形链接。在那次改动落地之前，本站的集成步骤带 `--warn-only`：报告缺陷但不拦部署；修复一进去，这个旗子就摘掉，此后任何 float 往返都会直接失败。
+### 13.1 已修复（2026-11-06）
+
+`run_page/fix_run_id_precision_rh.py` 只在没有歧义时恢复精确 id：恰好一个 DB id 落在同一个 double 上，且名称、起始时间、里程三项都一致。执行前判定 **84 可修 / 0 歧义 / 0 拒绝**，执行后重新判定 **0 可修**，JSON 的改动是**恰好 84 行 `run_id`、其余字节不变**（`git diff --stat` = 84 insertions / 84 deletions）。此后 `check_data_integrity_rh.py` 以严格模式通过（`--warn-only` 已从本站工作流摘除），DB↔JSON 的记录集合两侧都无缺席；顺带把 169 条派生地点全部镜像进 DB——resolver 按 id UPDATE，id 一正，先前落空的 23 行全部命中（`database run_page/data.db: 169 row(s) updated, 0 run_id(s) absent`）。
+
+### 13.2 场景文件名与 `scenes.json` 的键**故意不改**
+
+计划里原本要连 `scenes.json` 的键和 78 个 `public/scenes/<id>.scene` 一起改名，实测证明改了才会坏：
+
+- 浏览器拿到的是 JS number，`TerrainCard` 用 `String(run.run_id)` 拼出请求路径——**一个 19 位 id 经 `Number → String` 必然回到漂移后的十进制**，所以文件名必须是漂移形式；`src/vert/scenes.ts` 的 `sceneHashOf` 也正是先用字符串、再用 `byNumber` 数值兜底，才让 232 个键在修复后仍全部命中；
+- CI 里的烘焙与回填步骤（`scripts/bake-scenes.mjs`、`scripts/backfill-scene-records.mjs`）都是 Node 读同一份 JSON 再写回，文件名永远由 `String(double)` 生成——即使手工改名，下一次烘焙又会生成漂移名的新文件；
+- 因此改名会当场断掉 78 条地形链接，而收益只有文件名好看。核对结果：232 条有场景的记录，hash 命中 232/232，`<String(run_id)>.scene` 与 `.scene.json` 成对存在 232/232。
+
+真正需要精确 id 的是**记录本身与 DB 的连接**（手表报出的值、跨库清单、parquet、CSV 都按整数比对），这一层已经修复。
+
+### 13.3 复发防护
+
+漂移的来源是那两步 Node 改写，所以工作流在 `Backfill terrain records and sync into DB` 之后、parquet／README／地点反查／集成检查之前新增 `Restore run_ids rounded away by Node`（`fix_run_id_precision_rh.py --execute`）：每天从 DB 权威值恢复，只改无歧义且三项一致的 id，其余原样报告；紧接的严格集成检查若发现任何残留往返，直接拒绝提交。
+
+### 13.4 修复后的实测
+
+本地构建三视口（1440／390／320）与线上同页对照：pageerror 0、非库告警 console error 0、横向溢出 0，标题、累计里程、地点来源计数（设备原生 75 条 + 轨迹坐标解析 169 条）两侧完全一致；打开 3D 地形三条（两条 19 位 id、一条普通 id 对照）均 `.scene` 200、canvas 出图、无「地形加载失败」文案。hiking 的 JSON 仅 1.10 MB，不涉及 cycling 那套按年轨迹分片。
