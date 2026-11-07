@@ -63,6 +63,12 @@ const CoreMetrics = ({ totals, scope, runs = [] }: ICoreMetricsProps) => {
         : '当前范围没有记录',
     },
     {
+      label: '累计下降',
+      value: '无记录',
+      unit: '',
+      sub: '原始导出无下降字段，不做估算',
+    },
+    {
       label: '最高到达海拔',
       value:
         totals.altitudeMaxM === null
@@ -113,6 +119,7 @@ const CoreMetrics = ({ totals, scope, runs = [] }: ICoreMetricsProps) => {
               totals.count
             )} 次（${climbCoverage}%），未覆盖的年份显示「—」，不以 0 代替；GPS 噪声导致的物理不可能值（>2.5 × 最高海拔，或无海拔数据时 >100 m/km）视为缺失，原始记录不改动。`
           : ''}
+        {hasRuns ? ' 设备导出不含 elevation_loss 字段，累计下降保持「无记录」，不展示推测值。' : ''}
         {totals.altitudeMaxM !== null
           ? ' 海拔来自 3D 地形剖面回填，仅覆盖有剖面数据的徒步。'
           : ''}
