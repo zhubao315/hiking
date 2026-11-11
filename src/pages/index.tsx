@@ -11,6 +11,7 @@ import RunCalendar, {
   type CalendarMetric,
 } from '@/components/HikingDashboard/RunCalendar';
 import SectionHeader from '@/components/HikingDashboard/SectionHeader';
+import HikingAnalysis from '@/components/HikingDashboard/TrainingAnalysis';
 import useActivities from '@/hooks/useActivities';
 import { sceneHashOf } from '@/vert/scenes';
 import {
@@ -411,8 +412,21 @@ const Index = () => {
         />
       </section>
 
+      <section id="training" className={styles.section}>
+        <SectionHeader index="05" kicker="TRAINING ANALYSIS" title="训练分析">
+          <span className={styles.scopePill}>
+            {filterNote ?? scopeLabel(scope)}
+          </span>
+        </SectionHeader>
+
+        <HikingAnalysis
+          runs={scopeRuns}
+          scopeLabel={filterNote ?? scopeLabel(scope)}
+        />
+      </section>
+
       <section id="explore" className={styles.section}>
-        <SectionHeader index="05" kicker="TRAIL EXPLORER" title="徒步探索">
+        <SectionHeader index="06" kicker="TRAIL EXPLORER" title="徒步探索">
           <span className={styles.scopePill}>
             {filterNote ?? scopeLabel(scope)}
           </span>
