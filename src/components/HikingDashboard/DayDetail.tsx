@@ -10,6 +10,7 @@ import {
   type RunRecord,
 } from '@/utils/hikingStats';
 import { titleForRun } from '@/utils/utils';
+import { healthDayUrl } from '@/utils/urlState';
 import { sceneHashOf } from '@/vert/scenes';
 import styles from './style.module.css';
 
@@ -110,6 +111,16 @@ const DayDetail = ({
 
       <p className={styles.dayHint}>
         点击记录在地图上定位并展开地形剖面，带 3D 标记的徒步有烘焙好的地形数据。
+      </p>
+      <p className={styles.dayHint}>
+        <a
+          className={styles.dayLink}
+          href={healthDayUrl(date)}
+          target="__blank"
+          rel="noopener noreferrer"
+        >
+          查看当日睡眠与恢复状态 →
+        </a>
       </p>
     </article>
   );
