@@ -15,8 +15,13 @@ name: COROS Sync
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 0 * * 1' # Mondays 08:30 Asia/Shanghai (weekly catch-all)
-    - cron: '30 0 * 5,10 4' # Thursdays in May & October (hiking season)
+    # Slots moved ~5-6 h ahead of the old 08:30 Beijing pair: GitHub fires
+    # scheduled triggers 5-6 h late on this repo, so these land near 09:30 Beijing.
+    # The UTC weekday is the day BEFORE because the slot crosses midnight;
+    # in Beijing they stay Monday / Thursday. Cycling's daily pass runs 30
+    # min earlier so the shared COROS quota is never touched twice at once.
+    - cron: '35 19 * * 0' # Mondays 03:35 Asia/Shanghai (weekly catch-all)
+    - cron: '35 19 * 5,10 3' # Thursdays in May & October (hiking season)
   push:
     branches:
       - main
