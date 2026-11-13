@@ -1,0 +1,23 @@
+{
+  "name": "ACTIVE / HIKING｜zhubao315 的徒步与山野",
+  "short_name": "ACTIVE",
+  "description": "徒步里程、累计爬升、最高海拔、季节与省份筛选、山野轨迹与 3D 地形，全部来自 COROS 原始记录。",
+  "start_url": "/hiking/",
+  "scope": "/hiking/",
+  "display": "standalone",
+  "lang": "zh-CN",
+  "theme_color": "#34D399",
+  "background_color": "#07111f",
+  "icons": [
+    {
+      "src": "/brand/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/brand/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
