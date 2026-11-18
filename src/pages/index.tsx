@@ -444,7 +444,7 @@ const Index = () => {
               }
               thisYear={selectedYear === 'all' ? 'Total' : selectedYear}
             />
-            <p className="border-t border-[#2a2a2a] px-4 py-2 text-xs text-[#777]">
+            <p className="border-t border-[#2a2a2a] px-4 py-2 text-xs text-[var(--muted)]">
               轨迹按记录原样绘制；信号中断处断开显示，不做直线连接。
             </p>
           </div>
