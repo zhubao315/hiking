@@ -1,13 +1,15 @@
 import { locationForRun, periodTitleForRun } from '@/utils/utils';
 import activities from '@/static/activities.json';
 
-const useActivities = () => {
+// Same pattern as RUNNING and CYCLING: the activity file is static for the
+// lifetime of the bundle, so aggregate once at module load instead of folding
+// every record on each of the 10+ useActivities() calls per render.
+const build = () => {
   const cities: Record<string, number> = {};
   const runPeriod: Record<string, number> = {};
   const provinces: Set<string> = new Set();
   const countries: Set<string> = new Set();
-  let years: Set<string> = new Set();
-  let thisYear = '';
+  const years: Set<string> = new Set();
 
   activities.forEach((run) => {
     const location = locationForRun(run);
@@ -26,12 +28,11 @@ const useActivities = () => {
     }
     if (province) provinces.add(province);
     if (country) countries.add(country);
-    const year = run.start_date_local.slice(0, 4);
-    years.add(year);
+    years.add(run.start_date_local.slice(0, 4));
   });
 
-  let yearsArray = [...years].sort().reverse();
-  if (years) [thisYear] = yearsArray; // set current year as first one of years array
+  const yearsArray = [...years].sort().reverse();
+  const thisYear = yearsArray[0] ?? '';
 
   return {
     activities,
@@ -43,5 +44,9 @@ const useActivities = () => {
     thisYear,
   };
 };
+
+const cache = build();
+
+const useActivities = () => cache;
 
 export default useActivities;

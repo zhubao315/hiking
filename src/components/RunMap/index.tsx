@@ -8,7 +8,6 @@ import {
   PROVINCE_FILL_COLOR,
   COUNTRY_FILL_COLOR,
   USE_DASH_LINE,
-  LINE_OPACITY,
   MAP_HEIGHT,
 } from '@/utils/const';
 import { Coordinate, IViewState, geoJsonForMap } from '@/utils/utils';
